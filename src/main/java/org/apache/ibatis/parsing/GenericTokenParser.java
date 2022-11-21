@@ -35,8 +35,10 @@ public class GenericTokenParser {
       return "";
     }
     // search open token
+    // 寻找开始的 openToken 的位置
     int start = text.indexOf(openToken);
     if (start == -1) {
+      // 找不到，直接返回
       return text;
     }
     char[] src = text.toCharArray();
@@ -46,6 +48,7 @@ public class GenericTokenParser {
     do {
       if (start > 0 && src[start - 1] == '\\') {
         // this open token is escaped. remove the backslash and continue.
+        // 因为 openToken 前面一个位置是 \ 转义字符，所以忽略 \
         builder.append(src, offset, start - offset - 1).append(openToken);
         offset = start + openToken.length();
       } else {

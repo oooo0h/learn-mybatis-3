@@ -14,11 +14,7 @@
 --    limitations under the License.
 --
 
-DROP TABLE subject
-IF EXISTS;
-
-DROP TABLE extensive_subject
-IF EXISTS;
+drop table if exists subject;
 
 CREATE TABLE subject (
   id     INT NOT NULL,
@@ -30,6 +26,7 @@ CREATE TABLE subject (
   dt     TIMESTAMP
 );
 
+drop table if exists extensive_subject;
 CREATE TABLE extensive_subject (
   aByte      TINYINT,
   aShort     SMALLINT,
@@ -41,8 +38,8 @@ CREATE TABLE extensive_subject (
   aBoolean   BIT,
   aString    VARCHAR(255),
   anEnum     VARCHAR(50),
-  aClob      LONGVARCHAR,
-  aBlob      LONGVARBINARY,
+  aClob      VARCHAR(255),
+  aBlob      VARCHAR(255),
   aTimestamp TIMESTAMP
 );
 
@@ -54,5 +51,5 @@ INSERT INTO subject VALUES
 INSERT INTO extensive_subject
 VALUES
   (1, 1, 'a', 1, 1, 1, 1.0, 1, 'a', 'AVALUE', 'ACLOB', 'aaaaaabbbbbb', CURRENT_TIMESTAMP),
-  (2, 2, 'b', 2, 2, 2, 2.0, 2, 'b', 'BVALUE', 'BCLOB', '010101010101', CURRENT_TIMESTAMP),
-  (3, 3, 'c', 3, 3, 3, 3.0, 3, 'c', 'CVALUE', 'CCLOB', '777d010078da', CURRENT_TIMESTAMP);
+  (2, 2, 'b', 2, 2, 2, 2.0, 1, 'b', 'BVALUE', 'BCLOB', '010101010101', CURRENT_TIMESTAMP),
+  (3, 3, 'c', 3, 3, 3, 3.0, 0, 'c', 'CVALUE', 'CCLOB', '777d010078da', CURRENT_TIMESTAMP);

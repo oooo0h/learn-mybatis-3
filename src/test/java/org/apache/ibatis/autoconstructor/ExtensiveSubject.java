@@ -15,6 +15,9 @@
  */
 package org.apache.ibatis.autoconstructor;
 
+/**
+ * extensive_subject 表。
+ */
 public class ExtensiveSubject {
     private final byte aByte;
     private final short aShort;
