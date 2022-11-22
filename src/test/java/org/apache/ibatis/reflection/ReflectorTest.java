@@ -168,9 +168,12 @@ class ReflectorTest {
     public T getFld() {
       return fld;
     }
+
+    public void test(){}
   }
 
   static class Child extends Parent<String> {
+    public void test(){}
   }
 
   @Test
