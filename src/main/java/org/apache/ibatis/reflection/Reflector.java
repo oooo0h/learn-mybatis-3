@@ -88,7 +88,7 @@ public class Reflector {
   private Constructor<?> defaultConstructor;
 
   /**
-   * 不区分大小写的属性集合
+   * 不区分大小写的get/set方法名集合
    */
   private Map<String, String> caseInsensitivePropertyMap = new HashMap<>();
 
@@ -100,10 +100,12 @@ public class Reflector {
     //
     Method[] classMethods = getClassMethods(clazz);
     if (isRecord(type)) {
+      // 添加密封类的get方法
       addRecordGetMethods(classMethods);
     } else {
       addGetMethods(classMethods);
       addSetMethods(classMethods);
+      // 添加属性
       addFields(clazz);
     }
     readablePropertyNames = getMethods.keySet().toArray(new String[0]);
@@ -122,14 +124,20 @@ public class Reflector {
   }
 
   private void addDefaultConstructor(Class<?> clazz) {
+    // 获取所有的构造器方法
     Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+    // 过滤出方法参数为0的构造器方法
     Arrays.stream(constructors).filter(constructor -> constructor.getParameterTypes().length == 0)
       .findAny().ifPresent(constructor -> this.defaultConstructor = constructor);
   }
 
   private void addGetMethods(Method[] methods) {
+    // 方法容器
     Map<String, List<Method>> conflictingGetters = new HashMap<>();
-    Arrays.stream(methods).filter(m -> m.getParameterTypes().length == 0 && PropertyNamer.isGetter(m.getName()))
+    Arrays.stream(methods)
+      // 过滤出方法参数为0说明是get方法 且 方法名是getXxx或isXxx
+      .filter(m -> m.getParameterTypes().length == 0 && PropertyNamer.isGetter(m.getName()))
+      //
       .forEach(m -> addMethodConflict(conflictingGetters, PropertyNamer.methodToProperty(m.getName()), m));
     resolveGetterConflicts(conflictingGetters);
   }
@@ -184,8 +192,18 @@ public class Reflector {
     resolveSetterConflicts(conflictingSetters);
   }
 
+  /**
+   * 将方法放入容器
+   * @param conflictingMethods 方法容器
+   * @param name 方法名称
+   * @param method 方法对象
+   */
   private void addMethodConflict(Map<String, List<Method>> conflictingMethods, String name, Method method) {
     if (isValidPropertyName(name)) {
+      /*
+      如果 conflictingMethods.get(name) == null
+      执行 函数式接口，即返回一个新的 ArrayList
+       */
       List<Method> list = MapUtil.computeIfAbsent(conflictingMethods, name, k -> new ArrayList<>());
       list.add(method);
     }
@@ -302,27 +320,33 @@ public class Reflector {
     }
   }
 
+  /**
+   * 字符串不是"serialVersionUID"或"class"，且不能以"$"开头
+   * @param name 方法名称
+   * @return 是否满足条件
+   */
   private boolean isValidPropertyName(String name) {
     return !(name.startsWith("$") || "serialVersionUID".equals(name) || "class".equals(name));
   }
 
   /**
-   * This method returns an array containing all methods
-   * declared in this class and any superclass.
-   * We use this method, instead of the simpler <code>Class.getMethods()</code>,
-   * because we want to look for private methods as well.
+   * 此方法返回包含所有方法的数组
+   * 在这个类和任何超类中声明。
+   * 我们使用这个方法，而不是更简单的<code>Class.getMethods（）</code>，
+   * 因为我们也想寻找私有方法。
    *
    * @param clazz The class
-   * @return An array containing all methods in this class
+   * @return 包含此类中所有方法的数组
    */
   private Method[] getClassMethods(Class<?> clazz) {
     Map<String, Method> uniqueMethods = new HashMap<>();
     Class<?> currentClass = clazz;
     while (currentClass != null && currentClass != Object.class) {
+      // 记录当前类定义的方法
       addUniqueMethods(uniqueMethods, currentClass.getDeclaredMethods());
 
-      // we also need to look for interface methods -
-      // because the class may be abstract
+      // we also need to look for interface methods - because the class may be abstract
+      // 记录接口(抽象类)中定义的方法
       Class<?>[] interfaces = currentClass.getInterfaces();
       for (Class<?> anInterface : interfaces) {
         addUniqueMethods(uniqueMethods, anInterface.getMethods());
@@ -332,7 +356,15 @@ public class Reflector {
     }
 
     Collection<Method> methods = uniqueMethods.values();
-
+    /*
+    关于toArray方法的介绍：
+      如果指定的数组能容纳该 collection，则返回包含此 collection 元素的数组。
+      否则，将根据指定数组的运行时类型和此 collection 的大小分配一个新数组。
+    关于为什么是new Method[0]的猜测：
+      如果指定的数组能容纳 collection 并有剩余空间（即数组的元素比 collection 的元素多），
+      那么会将数组中紧跟在 collection 末尾的元素设置为 null。
+      （这对确定 collection 的长度很有用，但只有 在调用方知道此 collection 没有包含任何 null 元素时才可行。）
+     */
     return methods.toArray(new Method[0]);
   }
 
@@ -345,10 +377,11 @@ public class Reflector {
     for (Method currentMethod : methods) {
       // 判断是否是桥接方法
       if (!currentMethod.isBridge()) {
+        // 获取方法签名：返回值类型名#方法名:方法参数名1,方法参数名2...
         String signature = getSignature(currentMethod);
-        // check to see if the method is already known
-        // if it is known, then an extended class must have
-        // overridden a method
+        // check to see if the method is already known - 检查这个（重写的）方法是否在遍历子类的时候已经被放入了
+        // if it is known, then an extended class must have - 如果是
+        // overridden a method - 父类的方法不放入
         if (!uniqueMethods.containsKey(signature)) {
           uniqueMethods.put(signature, currentMethod);
         }
@@ -376,13 +409,17 @@ public class Reflector {
   }
 
   /**
-   * Checks whether can control member accessible.
+   * 判断，是否可以修改可访问性
    *
    * @return If can control member accessible, it return {@literal true}
    * @since 3.5.0
    */
   public static boolean canControlMemberAccessible() {
     try {
+      // 安全管理器
+      // 应用场景：当运行未知的Java程序的时候，
+      // 该程序可能有恶意代码（删除系统文件、重启系统等），
+      // 为了防止运行恶意代码对系统产生影响，需要对运行的代码的权限进行控制，这时候就要启用Java安全管理器。
       SecurityManager securityManager = System.getSecurityManager();
       if (null != securityManager) {
         securityManager.checkPermission(new ReflectPermission("suppressAccessChecks"));
@@ -501,6 +538,7 @@ public class Reflector {
   }
 
   /**
+   * 判断是否是密封类
    * Class.isRecord() alternative for Java 15 and older.
    */
   private static boolean isRecord(Class<?> clazz) {
