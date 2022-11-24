@@ -141,6 +141,11 @@ public class MetaObject {
     }
   }
 
+  /**
+   * 创建指定属性的 MetaObject 对象
+   * @param name
+   * @return
+   */
   public MetaObject metaObjectForProperty(String name) {
     Object value = getValue(name);
     return MetaObject.forObject(value, objectFactory, objectWrapperFactory, reflectorFactory);

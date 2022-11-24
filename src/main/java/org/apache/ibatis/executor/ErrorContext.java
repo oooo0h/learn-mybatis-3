@@ -16,6 +16,7 @@
 package org.apache.ibatis.executor;
 
 /**
+ * 异常全局处理器，适用于多线程情况
  * @author Clinton Begin
  */
 public class ErrorContext {

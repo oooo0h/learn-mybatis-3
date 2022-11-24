@@ -33,6 +33,9 @@ import org.apache.ibatis.transaction.TransactionFactory;
  */
 public class JdbcTransactionFactory implements TransactionFactory {
 
+  /**
+   * 关闭时是否跳过设置自动提交
+   */
   private boolean skipSetAutoCommitOnClose;
 
   @Override

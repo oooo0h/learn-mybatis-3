@@ -84,6 +84,11 @@ public class MetaClass {
     }
   }
 
+  /**
+   * 获得指定属性的 getting 方法的返回值的类型
+   * @param name
+   * @return
+   */
   public Class<?> getGetterType(String name) {
     PropertyTokenizer prop = new PropertyTokenizer(name);
     if (prop.hasNext()) {

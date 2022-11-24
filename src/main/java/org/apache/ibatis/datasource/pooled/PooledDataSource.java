@@ -36,6 +36,7 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 
 /**
+ * 实际场景下，我们基本不用 MyBatis 自带的数据库连接池的实现。
  * This is a simple, synchronous, thread-safe database connection pool.
  *
  * @author Clinton Begin
@@ -44,20 +45,52 @@ public class PooledDataSource implements DataSource {
 
   private static final Log log = LogFactory.getLog(PooledDataSource.class);
 
+  /**
+   * PoolState 对象，记录池化的状态
+   */
   private final PoolState state = new PoolState(this);
 
+  /**
+   * UnpooledDataSource 对象
+   */
   private final UnpooledDataSource dataSource;
 
-  // OPTIONAL CONFIGURATION FIELDS
+  // OPTIONAL CONFIGURATION FIELDS - 可选配置字段
+  /**
+   * 在任意时间可以存在的活动（也就是正在使用）连接数量
+   */
   protected int poolMaximumActiveConnections = 10;
+  /**
+   * 任意时间可能存在的空闲连接数
+   */
   protected int poolMaximumIdleConnections = 5;
+  /**
+   * 在被强制返回之前，池中连接被检出（checked out）时间。单位：毫秒
+   */
   protected int poolMaximumCheckoutTime = 20000;
+  /**
+   * 这是一个底层设置，如果获取连接花费了相当长的时间，连接池会打印状态日志并重新尝试获取一个连接（避免在误配置的情况下一直安静的失败）。单位：毫秒
+   */
   protected int poolTimeToWait = 20000;
+  /**
+   * 这是一个关于坏连接容忍度的底层设置，作用于每一个尝试从缓存池获取连接的线程. 如果这个线程获取到的是一个坏的连接，那么这个数据源允许这个线程尝试重新获取一个新的连接，但是这个重新尝试的次数不应该超过 poolMaximumIdleConnections 与 poolMaximumLocalBadConnectionTolerance 之和。
+   */
   protected int poolMaximumLocalBadConnectionTolerance = 3;
+  /**
+   * 发送到数据库的侦测查询，用来检验连接是否正常工作并准备接受请求。
+   */
   protected String poolPingQuery = "NO PING QUERY SET";
+  /**
+   * 是否启用侦测查询。若开启，需要设置 poolPingQuery 属性为一个可执行的 SQL 语句（最好是一个速度非常快的 SQL 语句）
+   */
   protected boolean poolPingEnabled;
+  /**
+   * 配置 poolPingQuery 的频率。可以被设置为和数据库连接超时时间一样，来避免不必要的侦测，默认值：0（即所有连接每一时刻都被侦测 — 当然仅当 poolPingEnabled 为 true 时适用）
+   */
   protected int poolPingConnectionsNotUsedFor;
-
+  /**
+   * 期望 Connection 的类型编码，通过 {@link #assembleConnectionTypeCode(String, String, String)} 计算。
+   */
   private int expectedConnectionTypeCode;
 
   private final Lock lock = new ReentrantLock();
@@ -332,26 +365,34 @@ public class PooledDataSource implements DataSource {
   }
 
   /**
-   * Closes all active and idle connections in the pool.
+   * 关闭所有的 activeConnections（活跃连接） 和 idleConnections（空闲连接） 的连接。
    */
   public void forceCloseAll() {
     lock.lock();
     try {
+      // 计算 expectedConnectionTypeCode
       expectedConnectionTypeCode = assembleConnectionTypeCode(dataSource.getUrl(), dataSource.getUsername(), dataSource.getPassword());
+      // 遍历 activeConnections ，进行关闭
       for (int i = state.activeConnections.size(); i > 0; i--) {
         try {
+          // 设置为失效
           PooledConnection conn = state.activeConnections.remove(i - 1);
           conn.invalidate();
 
+          // 回滚事务，如果有事务未提交或回滚
           Connection realConn = conn.getRealConnection();
           if (!realConn.getAutoCommit()) {
             realConn.rollback();
           }
+
+          // 关闭真实的连接
           realConn.close();
         } catch (Exception e) {
           // ignore
         }
       }
+      // 遍历 idleConnections ，进行关闭
+      //【实现代码上，和上面是一样的】
       for (int i = state.idleConnections.size(); i > 0; i--) {
         try {
           PooledConnection conn = state.idleConnections.remove(i - 1);
@@ -382,6 +423,11 @@ public class PooledDataSource implements DataSource {
     return ("" + url + username + password).hashCode();
   }
 
+  /**
+   * 将使用完的连接，添加回连接池中。
+   * @param conn
+   * @throws SQLException
+   */
   protected void pushConnection(PooledConnection conn) throws SQLException {
 
     lock.lock();
@@ -424,6 +470,13 @@ public class PooledDataSource implements DataSource {
     }
   }
 
+  /**
+   * 整体逻辑见 （）http://svip.iocoder.cn/MyBatis/datasource-package/  3.2.2.1
+   * @param username
+   * @param password
+   * @return
+   * @throws SQLException
+   */
   private PooledConnection popConnection(String username, String password) throws SQLException {
     boolean countedWait = false;
     PooledConnection conn = null;
@@ -544,7 +597,7 @@ public class PooledDataSource implements DataSource {
   }
 
   /**
-   * Method to check to see if a connection is still usable
+   * 通过向数据库发起 poolPingQuery 语句来发起“ping”操作，以判断数据库连接是否有效。
    *
    * @param conn
    *          - the connection to check
@@ -596,6 +649,7 @@ public class PooledDataSource implements DataSource {
   }
 
   /**
+   * 获取真实的数据库连接
    * Unwraps a pooled connection to get to the 'real' connection
    *
    * @param conn
@@ -603,8 +657,11 @@ public class PooledDataSource implements DataSource {
    * @return The 'real' connection
    */
   public static Connection unwrapConnection(Connection conn) {
+    // 如果传入的是被代理的连接
     if (Proxy.isProxyClass(conn.getClass())) {
+      // 获取 InvocationHandler 对象
       InvocationHandler handler = Proxy.getInvocationHandler(conn);
+      // 如果是 PooledConnection 对象，则获取真实的连接
       if (handler instanceof PooledConnection) {
         return ((PooledConnection) handler).getRealConnection();
       }
