@@ -20,15 +20,26 @@ import java.lang.reflect.Field;
 import org.apache.ibatis.reflection.Reflector;
 
 /**
+ * 设置 Field 调用者
  * @author Clinton Begin
  */
 public class SetFieldInvoker implements Invoker {
+  /**
+   * Field 对象
+   */
   private final Field field;
 
   public SetFieldInvoker(Field field) {
     this.field = field;
   }
 
+  /**
+   * 设置 Field 属性
+   * @param target 目标
+   * @param args 参数
+   * @return null
+   * @throws IllegalAccessException
+   */
   @Override
   public Object invoke(Object target, Object[] args) throws IllegalAccessException {
     try {
@@ -44,6 +55,10 @@ public class SetFieldInvoker implements Invoker {
     return null;
   }
 
+  /**
+   * 返回属性类型
+   * @return 返回属性类型
+   */
   @Override
   public Class<?> getType() {
     return field.getType();

@@ -27,6 +27,7 @@ import org.apache.ibatis.reflection.invoker.MethodInvoker;
 import org.apache.ibatis.reflection.property.PropertyTokenizer;
 
 /**
+ * 类的元数据，基于 Reflector 和 PropertyTokenizer ，提供对指定类的各种骚操作。
  * @author Clinton Begin
  */
 public class MetaClass {
@@ -48,6 +49,11 @@ public class MetaClass {
     return MetaClass.forClass(propType, reflectorFactory);
   }
 
+  /**
+   * 根据表达式，获得属性名
+   * @param name 表达式
+   * @return 属性名
+   */
   public String findProperty(String name) {
     StringBuilder prop = buildProperty(name, new StringBuilder());
     return prop.length() > 0 ? prop.toString() : null;
@@ -146,6 +152,11 @@ public class MetaClass {
     }
   }
 
+  /**
+   * 判断指定属性是否有 getting 方法
+   * @param name 指定属性
+   * @return
+   */
   public boolean hasGetter(String name) {
     PropertyTokenizer prop = new PropertyTokenizer(name);
     if (prop.hasNext()) {
@@ -170,15 +181,23 @@ public class MetaClass {
 
   private StringBuilder buildProperty(String name, StringBuilder builder) {
     PropertyTokenizer prop = new PropertyTokenizer(name);
+    // 有子表达式
     if (prop.hasNext()) {
+      // 获得属性名，并添加到 builder 中
       String propertyName = reflector.findPropertyName(prop.getName());
       if (propertyName != null) {
+        // 拼接属性到 builder 中
         builder.append(propertyName);
         builder.append(".");
+        // 创建 MetaClass 对象
         MetaClass metaProp = metaClassForProperty(propertyName);
+        // 递归解析子表达式 children ，并将结果添加到 builder 中
         metaProp.buildProperty(prop.getChildren(), builder);
       }
-    } else {
+    }
+    // 无子表达式
+    else {
+      // 获得属性名，并添加到 builder 中
       String propertyName = reflector.findPropertyName(name);
       if (propertyName != null) {
         builder.append(propertyName);

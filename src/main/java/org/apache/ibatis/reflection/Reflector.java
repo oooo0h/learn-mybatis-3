@@ -88,7 +88,7 @@ public class Reflector {
   private Constructor<?> defaultConstructor;
 
   /**
-   * 不区分大小写的get/set方法名集合
+   * 不区分大小写的属性集合
    */
   private Map<String, String> caseInsensitivePropertyMap = new HashMap<>();
 
@@ -299,6 +299,7 @@ public class Reflector {
         addGetField(field);
       }
     }
+    // 递归，处理父类
     if (clazz.getSuperclass() != null) {
       addFields(clazz.getSuperclass());
     }
@@ -306,21 +307,26 @@ public class Reflector {
 
   private void addSetField(Field field) {
     if (isValidPropertyName(field.getName())) {
+      // 添加到 setMethods 中
       setMethods.put(field.getName(), new SetFieldInvoker(field));
       Type fieldType = TypeParameterResolver.resolveFieldType(field, type);
+      // 添加到 setTypes 中
       setTypes.put(field.getName(), typeToClass(fieldType));
     }
   }
 
   private void addGetField(Field field) {
     if (isValidPropertyName(field.getName())) {
+      // 添加到 setMethods 中
       getMethods.put(field.getName(), new GetFieldInvoker(field));
       Type fieldType = TypeParameterResolver.resolveFieldType(field, type);
+      // 添加到 setTypes 中
       getTypes.put(field.getName(), typeToClass(fieldType));
     }
   }
 
   /**
+   * 判断是合理的属性
    * 字符串不是"serialVersionUID"或"class"，且不能以"$"开头
    * @param name 方法名称
    * @return 是否满足条件
@@ -369,6 +375,7 @@ public class Reflector {
   }
 
   /**
+   * 将方法放入容器中
    * 桥接方法介绍：源代码中不存在方法，有编译器自动生成
    * @param uniqueMethods 存放方法的集合
    * @param methods 当前类的方法数组
@@ -514,7 +521,7 @@ public class Reflector {
   }
 
   /**
-   * Check to see if a class has a writable property by name.
+   * 判断是否有对应的setter方法
    *
    * @param propertyName - the name of the property to check
    * @return True if the object has a writable property by the name
@@ -524,7 +531,7 @@ public class Reflector {
   }
 
   /**
-   * Check to see if a class has a readable property by name.
+   * 判断是否有对应的getter方法
    *
    * @param propertyName - the name of the property to check
    * @return True if the object has a readable property by the name

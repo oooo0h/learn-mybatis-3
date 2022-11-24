@@ -49,11 +49,17 @@ public final class PropertyNamer {
     return name;
   }
 
+  /**
+   * 判断是否为 is、get、set 方法
+   * @param name 方法名
+   * @return
+   */
   public static boolean isProperty(String name) {
     return isGetter(name) || isSetter(name);
   }
 
   /**
+   * 判断是否为 get、is 方法
    * 字符串以get开头且含有除get的字符 或 字符串以is开头且含有除is的字符
    * @param name 要判断的字符串
    * @return 是否满足条件
@@ -62,6 +68,11 @@ public final class PropertyNamer {
     return (name.startsWith("get") && name.length() > 3) || (name.startsWith("is") && name.length() > 2);
   }
 
+  /**
+   * 判断是否为 set 方法
+   * @param name 方法名
+   * @return
+   */
   public static boolean isSetter(String name) {
     return name.startsWith("set") && name.length() > 3;
   }
