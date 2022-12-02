@@ -25,6 +25,7 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 
 /**
+ * 解析器工具类，用于获得指定目录符合条件的类们。
  * <p>ResolverUtil is used to locate classes that are available in the/a class path and meet
  * arbitrary conditions. The two most common conditions are that a class implements/extends
  * another class, or that is it annotated with a specific annotation. However, through the use
@@ -71,6 +72,7 @@ public class ResolverUtil<T> {
   public interface Test {
 
     /**
+     * 匹配判断接口。
      * Will be called repeatedly with candidate classes. Must return True if a class
      * is to be included in the results, false otherwise.
      *
@@ -87,7 +89,7 @@ public class ResolverUtil<T> {
    */
   public static class IsA implements Test {
 
-    /** The parent. */
+    /** 指定类 */
     private Class<?> parent;
 
     /**
@@ -118,7 +120,7 @@ public class ResolverUtil<T> {
    */
   public static class AnnotatedWith implements Test {
 
-    /** The annotation. */
+    /** 判断是否有指定注解。 */
     private Class<? extends Annotation> annotation;
 
     /**
@@ -183,6 +185,7 @@ public class ResolverUtil<T> {
   }
 
   /**
+   * 判断指定目录下们，符合指定类的类们。
    * Attempts to discover classes that are assignable to the type provided. In the case
    * that an interface is provided this method will collect implementations. In the case
    * of a non-interface class, subclasses will be collected.  Accumulated classes can be
@@ -246,9 +249,13 @@ public class ResolverUtil<T> {
     String path = getPackagePath(packageName);
 
     try {
+      // <2> 获得路径下的所有文件
       List<String> children = VFS.getInstance().list(path);
+      // <3> 遍历
       for (String child : children) {
+        // 是 Java Class
         if (child.endsWith(".class")) {
+          // 如果匹配，则添加到结果集
           addIfMatching(test, child);
         }
       }
@@ -260,6 +267,7 @@ public class ResolverUtil<T> {
   }
 
   /**
+   * 替换 / 为 。
    * Converts a Java package name to a path that can be looked up with a call to
    * {@link ClassLoader#getResources(String)}.
    *
@@ -281,13 +289,15 @@ public class ResolverUtil<T> {
   @SuppressWarnings("unchecked")
   protected void addIfMatching(Test test, String fqn) {
     try {
+      // 获得全类名
       String externalName = fqn.substring(0, fqn.indexOf('.')).replace('/', '.');
       ClassLoader loader = getClassLoader();
       if (log.isDebugEnabled()) {
         log.debug("Checking to see if class " + externalName + " matches criteria [" + test + "]");
       }
-
+      // 加载类
       Class<?> type = loader.loadClass(externalName);
+      // 判断是否匹配
       if (test.matches(type)) {
         matches.add((Class<T>) type);
       }
