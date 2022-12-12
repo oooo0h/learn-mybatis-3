@@ -52,6 +52,7 @@ import java.lang.annotation.Target;
 public @interface SelectProvider {
 
   /**
+   * 提供的类
    * Specify a type that implements an SQL provider method.
    *
    * @return a type that implements an SQL provider method
@@ -61,6 +62,7 @@ public @interface SelectProvider {
   Class<?> value() default void.class;
 
   /**
+   * 提供的类
    * Specify a type that implements an SQL provider method.
    * <p>
    * This attribute is alias of {@link #value()}.
@@ -72,6 +74,7 @@ public @interface SelectProvider {
   Class<?> type() default void.class;
 
   /**
+   * 提供的方法
    * Specify a method for providing an SQL.
    *
    * <p>

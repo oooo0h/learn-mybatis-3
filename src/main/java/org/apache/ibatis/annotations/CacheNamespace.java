@@ -51,6 +51,7 @@ import org.apache.ibatis.cache.impl.PerpetualCache;
 public @interface CacheNamespace {
 
   /**
+   * 负责存储的 Cache 实现类
    * Returns the cache implementation type to use.
    *
    * @return the cache implementation type
@@ -58,6 +59,7 @@ public @interface CacheNamespace {
   Class<? extends Cache> implementation() default PerpetualCache.class;
 
   /**
+   * 负责过期的 Cache 实现类
    * Returns the cache evicting implementation type to use.
    *
    * @return the cache evicting implementation type
@@ -65,6 +67,7 @@ public @interface CacheNamespace {
   Class<? extends Cache> eviction() default LruCache.class;
 
   /**
+   * 清空缓存的频率。0 代表不清空
    * Returns the flush interval.
    *
    * @return the flush interval
@@ -79,6 +82,7 @@ public @interface CacheNamespace {
   int size() default 1024;
 
   /**
+   * 是否序列化
    * Returns whether use read/write cache.
    *
    * @return {@code true} if use read/write cache; {@code false} if otherwise
@@ -86,6 +90,7 @@ public @interface CacheNamespace {
   boolean readWrite() default true;
 
   /**
+   * 是否阻塞
    * Returns whether block the cache at request time or not.
    *
    * @return {@code true} if block the cache; {@code false} if otherwise

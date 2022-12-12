@@ -38,6 +38,7 @@ import org.apache.ibatis.type.UnknownTypeHandler;
 @Repeatable(Results.class)
 public @interface Result {
   /**
+   * 是否是 ID 字段
    * Returns whether id column or not.
    *
    * @return {@code true} if id column; {@code false} if otherwise
@@ -45,6 +46,7 @@ public @interface Result {
   boolean id() default false;
 
   /**
+   * 数据库的字段
    * Return the column name(or column label) to map to this argument.
    *
    * @return the column name(or column label)
@@ -52,6 +54,7 @@ public @interface Result {
   String column() default "";
 
   /**
+   * Java 类中的属性
    * Returns the property name for applying this mapping.
    *
    * @return the property name
@@ -59,6 +62,7 @@ public @interface Result {
   String property() default "";
 
   /**
+   * Java Type
    * Return the java type for this argument.
    *
    * @return the java type
@@ -66,6 +70,7 @@ public @interface Result {
   Class<?> javaType() default void.class;
 
   /**
+   * JDBC Type
    * Return the jdbc type for column that map to this argument.
    *
    * @return the jdbc type
