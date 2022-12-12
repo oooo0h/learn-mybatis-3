@@ -68,10 +68,13 @@ public class MapperRegistry {
         // It's important that the type is added before the parser is run
         // otherwise the binding may automatically be attempted by the
         // mapper parser. If the type is already known, it won't try.
+        // 解析 Mapper 的注解配置
         MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
         parser.parse();
+        // 标记加载完成
         loadCompleted = true;
       } finally {
+        // 若加载未完成，从 knownMappers 中移除
         if (!loadCompleted) {
           knownMappers.remove(type);
         }
@@ -108,7 +111,7 @@ public class MapperRegistry {
   }
 
   /**
-   * Adds the mappers.
+   * 扫描指定包，并将符合的类，添加到 knownMappers 中。
    *
    * @param packageName
    *          the package name
